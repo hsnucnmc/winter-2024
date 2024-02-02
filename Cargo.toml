@@ -7,6 +7,7 @@ edition = "2021"
 
 [dependencies]
 axum = "0.7.4"
+dashmap = "5.5.3"
 rand = "0.8.5"
 resvg = "0.38.0"
 tiny-skia = "0.11.3"

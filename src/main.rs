@@ -1,33 +1,94 @@
-use axum::{response::IntoResponse, routing::get, Router};
-use rand::Rng;
+use std::collections::BTreeMap;
+use std::sync::{Arc, RwLock};
+
+use axum::response::Response;
+use axum::{
+    extract::{DefaultBodyLimit, Path, State},
+    response::IntoResponse,
+    routing::get,
+    Router,
+};
+use rand::{thread_rng, Rng};
+use std::time::Instant;
 use usvg::{fontdb, Tree, TreeParsing, TreePostProc};
+
+type QuestionID = u32;
+type AnswerNum = u32;
+
+#[derive(Default)]
+struct AppState {
+    active_qid: BTreeMap<QuestionID, AnswerNum>,
+    qid_time: BTreeMap<Instant, QuestionID>,
+    fontdb: fontdb::Database,
+}
+
+type SharedState = Arc<RwLock<AppState>>;
 
 #[tokio::main]
 async fn main() {
     tracing_subscriber::fmt::init();
 
+    let mut state = AppState::default();
+    state.fontdb.load_system_fonts();
+
+    let shared_state = SharedState::new(RwLock::new(state));
+
     let app = Router::new()
-        .route("/random-img", get(random_img));
-    let listener = tokio::net::TcpListener::bind("localhost:10069").await.unwrap();
+        .route("/new-qid", get(new_qid))
+        .route("/captcha-img/:id", get(random_img))
+        .with_state(shared_state);
+
+    let listener = tokio::net::TcpListener::bind("localhost:10069")
+        .await
+        .unwrap();
     axum::serve(listener, app).await.unwrap();
 }
 
-async fn random_img() -> impl IntoResponse {
-    ([(axum::http::header::CONTENT_TYPE, "image/png")], get_png())
+async fn random_img(State(state): State<SharedState>, Path(qid): Path<String>) -> Response {
+    let state = state.read().unwrap();
+    let qid: QuestionID = match QuestionID::from_str_radix(&qid, 16) {
+        Ok(qid) => qid,
+        Err(_) => return "".into_response(),
+    };
+    let ans = match state.active_qid.get(&qid) {
+        Some(ans) => ans,
+        None => return "".into_response(),
+    };
+    (
+        [(axum::http::header::CONTENT_TYPE, "image/png")],
+        get_png(*ans, &state.fontdb),
+    )
+        .into_response()
 }
 
-fn get_png() -> Vec<u8> {
-    let mut fontdb = fontdb::Database::new();
-    fontdb.load_system_fonts();
-    let (answer_digits, answer) = {
-        let mut arr = [0; 5];
-        let mut ans = 0;
-        for i in 0..5 {
-            arr[i] = random_digit();
-            ans*=10;
-            ans+=arr[i];
+async fn new_qid(State(state): State<SharedState>) -> String {
+    let (qid, ans) = loop {
+        let qid: QuestionID = thread_rng().gen_range(0x00000000..=0x99999999);
+        let ans: AnswerNum = thread_rng().gen_range(00000..=99999);
+
+        let state = state.read().unwrap();
+        if state.active_qid.contains_key(&qid) {
+            continue;
         }
-        (arr, ans)
+
+        break (qid, ans);
+    };
+    let mut state = state.write().unwrap();
+    state.active_qid.insert(qid, ans);
+    println!("{} {}", qid, ans);
+    format!("{:08X}", qid)
+}
+
+fn get_png(mut ans: AnswerNum, fontdb: &fontdb::Database) -> Vec<u8> {
+    let answer_digits = {
+        assert!(ans <= 99999);
+
+        let mut arr = [0; 5];
+        for i in (0..5).rev() {
+            arr[i] = ans % 10;
+            ans /= 10;
+        }
+        arr
     };
     let svg_str = format!(
         r###"<svg xmlns='http://www.w3.org/2000/svg' height='100' width='280'>
@@ -62,12 +123,16 @@ fn get_png() -> Vec<u8> {
     let pixmap_size = tree.size.to_int_size();
     let mut pixmap = tiny_skia::Pixmap::new(pixmap_size.width(), pixmap_size.height()).unwrap();
     resvg::render(&tree, tiny_skia::Transform::default(), &mut pixmap.as_mut());
-    println!("ans: {}", answer);
     pixmap.encode_png().unwrap()
 }
 
 fn random_color() -> String {
-    format!("#{:02X}{:02X}{:02X}", rand::thread_rng().gen_range(0x22..=0xCC), rand::thread_rng().gen_range(0x22..=0xCC), rand::thread_rng().gen_range(0x22..=0xCC))
+    format!(
+        "#{:02X}{:02X}{:02X}",
+        rand::thread_rng().gen_range(0x22..=0xCC),
+        rand::thread_rng().gen_range(0x22..=0xCC),
+        rand::thread_rng().gen_range(0x22..=0xCC)
+    )
 }
 fn random_digit() -> u32 {
     rand::thread_rng().gen_range(0..=9)
