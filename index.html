@@ -13,9 +13,9 @@
     <form id="createuser-form" name="createUser">
         <div>
             <label>
-                Username (no whitespace allowed)
+                Username (alphanumeric & underscore only)
                 <br />
-                <input id="createuser-name" type="text" name="username" required pattern="^\S+$" autocomplete="off" />
+                <input id="createuser-name" type="text" name="username" required pattern="^\w+$" autocomplete="off" />
             </label>
         </div>
         <img id="captcha-image" src="youarebot.png" alt="captcha image" onclick="update_captcha()" />
@@ -24,10 +24,10 @@
                 Captcha Answer (five digits)
                 <br />
                 <input id="createuser-captcha-ans" type="text" name="captcha-ans" required pattern="^\d{5}$"
-                    autocomplete="off" disabled/>
+                    autocomplete="off" disabled />
             </label>
         </div>
-        <input id="createuser-submit" type="submit" value="Submit"/>
+        <input id="createuser-submit" type="submit" value="Submit" />
         <label id="createuser-result"></label>
     </form>
 

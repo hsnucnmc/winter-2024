@@ -7,8 +7,9 @@ let update_captcha = async () => {
 };
 
 let update_list = async () => {
-    let users = await (await fetch('/api/users')).text();
-    document.getElementById('users-list').innerHTML = 'Current users: (click to update)<br>' + users.split('\n').join('<br>');
+    let users = (await (await fetch('/api/users')).text()).trim();
+    if (users.length > 0)
+        document.getElementById('users-list').innerHTML = 'Current users: (click to update)<ul><li>' + users.split('\n').join('</li><li>') + "</li></ul>";
 };
 
 let submit_user = async () => {
@@ -23,7 +24,7 @@ let submit_user = async () => {
         },
         body: JSON.stringify(request)
     });
-    if (response.status==201){
+    if (response.status == 201) {
         update_list();
         document.getElementById("createuser-name").value = "";
         document.getElementById("createuser-captcha-ans").value = "";
@@ -34,7 +35,7 @@ let submit_user = async () => {
     }
     document.getElementById('captcha-image').setAttribute('src', 'youarebot.png');
     document.getElementById('createuser-captcha-ans').setAttribute("disabled", "");
-    qid=null;
+    qid = null;
 }
 
 document.getElementById("createuser-form").addEventListener("submit", function (e) {
