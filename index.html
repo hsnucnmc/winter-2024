@@ -1,13 +1,17 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+    <title>Captcha Test</title>
+    <script src=captcha.js defer></script>
 </head>
+
 <body>
     <h1>Please verify that you are not a robot</h1>
-    <img src="./api/random-img" alt="random test image from server"/>
-    <img src="youarecheat.png"/>
+    <img id="captcha-image" src="youarecheat.png" alt="captcha image" onclick="update_captcha()" />
+    <p id="users-list" onclick="update_list()">Current users: (click to update)</p>
 </body>
+
 </html>
