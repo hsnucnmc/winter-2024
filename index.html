@@ -9,8 +9,28 @@
 </head>
 
 <body>
-    <h1>Please verify that you are not a robot</h1>
-    <img id="captcha-image" src="youarecheat.png" alt="captcha image" onclick="update_captcha()" />
+    <h1>User Management</h1>
+    <form id="createuser-form" name="createUser">
+        <div>
+            <label>
+                Username (no whitespace allowed)
+                <br />
+                <input id="createuser-name" type="text" name="username" required pattern="^\S+$" autocomplete="off" />
+            </label>
+        </div>
+        <img id="captcha-image" src="youarebot.png" alt="captcha image" onclick="update_captcha()" />
+        <div>
+            <label>
+                Captcha Answer (five digits)
+                <br />
+                <input id="createuser-captcha-ans" type="text" name="captcha-ans" required pattern="^\d{5}$"
+                    autocomplete="off" disabled/>
+            </label>
+        </div>
+        <input id="createuser-submit" type="submit" value="Submit"/>
+        <label id="createuser-result"></label>
+    </form>
+
     <p id="users-list" onclick="update_list()">Current users: (click to update)</p>
 </body>
 
