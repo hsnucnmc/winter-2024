@@ -1382,6 +1382,7 @@ dependencies = [
  "dashmap",
  "rand",
  "resvg",
+ "serde",
  "tiny-skia",
  "tokio",
  "tracing",
