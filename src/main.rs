@@ -110,6 +110,12 @@ async fn submit(
         captcha_ans,
     }): Json<CreateUser>,
 ) -> Response {
+    for name_char in username.chars() {
+        if (!name_char.is_ascii_alphanumeric()) && name_char != '_' {
+            return StatusCode::BAD_REQUEST.into_response();
+        }
+    }
+
     let captcha_ans: AnswerNum = match captcha_ans.parse() {
         Ok(ans) => ans,
         Err(_) => return StatusCode::BAD_REQUEST.into_response(),
@@ -141,10 +147,6 @@ async fn submit(
     assert!(state.qid_state.remove(&captcha_qid).is_some());
     let time = state.qid_time.remove(&captcha_qid).unwrap();
     assert!(state.time_qid_qid.remove(&(time, captcha_qid)).is_some());
-
-    if username.split_whitespace().count() > 1 {
-        return StatusCode::BAD_REQUEST.into_response();
-    }
 
     println!("Created user: {}", &username);
     state.users.insert(username);
